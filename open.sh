@@ -5,7 +5,7 @@
 set -euo pipefail
 dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 circ="$(realpath "${1:-$dir/circuit/smips.circ}")"
-jar="${LOGISIM_JAR:-/snap/logisim-evolution-snapcraft/current/jar/logisim-evolution.jar}"
+jar="${LOGISIM_JAR:-./logisim-evolution.jar}"
 questa="${QUESTA_BIN:-$HOME/altera/25.1std/questa_fse/bin}"
 java="java"
 [ -x "$HOME/.local/jdk-21/bin/java" ] && java="$HOME/.local/jdk-21/bin/java"
