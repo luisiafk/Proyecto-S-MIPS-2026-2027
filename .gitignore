@@ -1,3 +1,5 @@
 *.jar
 *~
 .cache/
+.log
+.aux

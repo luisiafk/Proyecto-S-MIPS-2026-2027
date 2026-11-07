@@ -1,0 +1,133 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+
+% Paquetes visuales y tipografía
+\usepackage{xcolor}
+\usepackage{mathpazo}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+\usepackage{amsmath}
+
+% Paquetes para la FSM
+\usepackage{tikz}
+\usetikzlibrary{automata, positioning, arrows.meta, calc}
+
+% Paleta de colores
+\definecolor{maroon}{RGB}{122, 28, 28}
+\definecolor{boxbg}{RGB}{250, 245, 245}
+\definecolor{statebg}{RGB}{255, 250, 250}
+
+\tikzset{
+    fsmstate/.style={
+        circle,
+        draw=maroon,
+        thick,
+        fill=statebg,
+        minimum size=1.1cm,
+        font=\bfseries\small,
+        text=maroon
+        },
+    trans/.style={
+        ->,
+        >={Stealth[length=5pt, width=3.5pt]},
+        thick,
+        draw=maroon!85!black
+    },
+    every node/.style={font=\scriptsize}
+}
+\begin{document}
+
+\begin{center}
+    {\color{maroon}\small \textsc{Universidad de La Habana $\cdot$ Arquitectura de Computadoras}}\\[0.6em]
+    {\color{maroon}\LARGE \bfseries Diagrama de Transición de Estados: FSM S-MIPS}\\[0.4em]
+    \small Luis Enrique Cohalla Cabrera \quad--\quad \textit{\today}
+    \vspace{0.4em}
+    {\color{maroon}\rule{0.4\textwidth}{0.6pt}}
+\end{center}
+
+\vspace{1em}
+
+\begin{tcolorbox}[colback=boxbg, colframe=maroon, boxrule=0.5pt, leftrule=2.5pt, arc=0pt, left=8pt, right=8pt, top=6pt, bottom=6pt]
+\textbf{\color{maroon} ESPECIFICACIÓN DE POLÍTICA DE ERRORES}\\
+Ante una instrucción no reconocida (\texttt{Illegal}) evaluada en $S_1$, el circuito inhibe las escrituras habilitadas (\texttt{Awr}, \texttt{Bwr}) y retorna de forma segura al ciclo de \textit{Fetch} ($S_0$), garantizando un comportamiento tolerante a fallos sin bloqueo de CPU.
+\end{tcolorbox}
+
+\vspace{1.5em}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=2.5cm and 2.2cm, on grid]
+    % Estados principales
+    \node[fsmstate, initial, initial text={Start / Reset}] (S0) {$S_0$};
+    \node[fsmstate, right=3.6cm of S0] (S1) {$S_1$};
+
+    % Rama Memoria (Arriba)
+    \node[fsmstate, above right=1.8cm and 3.8cm of S1] (S2) {$S_2$};
+    \node[fsmstate, right=3cm of S2] (S3) {$S_3$};
+    \node[fsmstate, right=3cm of S3] (S4) {$S_4$};
+    \node[fsmstate, above right=2.4cm and 3cm of S2,] (S5) {$S_5$};
+
+    % Rama Tipo-R (Centro)
+    \node[fsmstate, right=3.8cm of S1] (S6) {$S_6$};
+    \node[fsmstate, right=3cm of S6] (S7) {$S_7$};
+
+    % Rama Branches y Jumps (Abajo)
+    \node[fsmstate, below=2.2cm of S6] (S8) {$S_8$};
+    \node[fsmstate, below=2.2cm of S8] (S9) {$S_9$};
+
+    % Transiciones
+    \path[trans] (S0) edge node[above] {Always} (S1);
+
+    % Salidas desde S1
+    \path[trans] (S1) edge[bend left=25] node[above left, sloped] {\texttt{IsLoad} $\lor$ \texttt{IsStore}} (S2);
+    \path[trans] (S1) edge node[above] {\texttt{IsR}} (S6);
+    \path[trans] (S1) edge[bend right=25] node[below left, sloped] {\texttt{IsBeq} $\lor$ \texttt{IsBne}} (S8);
+    \path[trans] (S1) edge[bend right=50] node[below, sloped] {\texttt{IsJ}} (S9);
+
+    % Instrucción ilegal
+    \path[trans] (S1) edge[bend left=55] node[above] {\textbf{\texttt{Illegal}}} (S0);
+
+    % Memoria
+    \path[trans] (S2) edge node[above] {\texttt{IsLoad}} (S3);
+    \path[trans] (S2) edge node[left] {\texttt{IsStore}} (S5);
+    \path[trans] (S3) edge node[above] {Always} (S4);
+
+    % Retornos limpios a S0
+    \path[trans] (S4) edge[bend right=40] node[above right] {Done} (S0);
+    \path[trans] (S5) edge[bend right=30] node[below right] {Done} (S0);
+    \path[trans] (S7) edge[bend left=25] node[above] {Done} (S0);
+    \path[trans] (S8) edge[bend left=40] node[below] {Done} (S0);
+    \path[trans] (S9) edge[bend left=55] node[below left] {Done} (S0);
+
+    % Ruta Tipo R
+    \path[trans] (S6) edge node[above] {Always} (S7);
+
+\end{tikzpicture}
+\caption{Diagrama de estados finito (FSM) multiciclo codificado en 4 bits ($D_3D_2D_1D_0$).}
+\label{fig:fsm-diagram}
+\end{figure}
+
+\vspace{1em}
+
+\section*{Resumen de Salidas de Control por Estado}
+
+\begin{center}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Estado} & \textbf{Código ($D_3D_2D_1D_0$)} & \textbf{Señales de Control Activas} & \textbf{Función en Datapath} \\
+\midrule
+$S_0$ & \texttt{0000} & \texttt{PCwr}, \texttt{IRwr}, \texttt{ALUSrcA=0}, \texttt{ALUSrcB=01} & Fetch de Instrucción + PC+4 \\
+$S_1$ & \texttt{0001} & (\text{Awr} $\lor$ \text{Bwr}) $\land \neg\text{Illegal}$ & Lectura de Reg. + Decodificación \\
+$S_2$ & \texttt{0010} & \texttt{ALUSrcA=1}, \texttt{ALUSrcB=10} & Cálculo de Dirección de Memoria \\
+$S_6$ & \texttt{0110} & \texttt{ALUSrcA=1}, \texttt{ALUSrcB=00}, \texttt{ALUOp=10} & Ejecución Aritmética R-Type \\
+$S_8$ & \texttt{1000} & \texttt{PCwrCond}, \texttt{ALUSrcA=1}, \texttt{ALUOp=01} & Comparación de Branch ($rs - rt$) \\
+$S_9$ & \texttt{1001} & \texttt{PCwr} & Salto Incondicional ($Jump$) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}
