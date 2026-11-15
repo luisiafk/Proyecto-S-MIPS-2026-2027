@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2025/dev/Debian) (preloaded format=pdflatex 2026.11.5)  15 NOV 2026 00:27
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2025/dev/Debian) (preloaded format=pdflatex 2026.11.5)  15 NOV 2026 00:35
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -749,7 +749,10 @@ File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count334
 \l__pdf_internal_box=\box75
 )
-No file memoria_microprocesador_smips.aux.
+(./memoria_microprocesador_smips.aux
+LaTeX Info: Redefining \. on input line 11.
+LaTeX Info: Redefining \% on input line 11.
+)
 \openout1 = `memoria_microprocesador_smips.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 25.
@@ -772,6 +775,7 @@ LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 25.
 LaTeX Font Info:    ... okay on input line 25.
 LaTeX Info: Redefining \. on input line 25.
 LaTeX Info: Redefining \% on input line 25.
+
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
 *geometry* verbose mode - [ preamble ] result:
@@ -829,6 +833,8 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
 Package hyperref Info: Link coloring ON on input line 25.
+
+(./memoria_microprocesador_smips.out) (./memoria_microprocesador_smips.out)
 \@outlinefile=\write4
 \openout4 = `memoria_microprocesador_smips.out'.
 
@@ -874,45 +880,39 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 27.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-No file memoria_microprocesador_smips.toc.
-\tf@toc=\write5
-\openout5 = `memoria_microprocesador_smips.toc'.
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 3
+9.
 
-
+(/usr/share/texmf/tex/latex/lm/t1lmtt.fd
+File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
 
 [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texmf/fonts/enc/
 dvips/lm/lm-ec.enc}]
-LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 4
-0.
- (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
-File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
-)
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 76.
+(Font)              <10.95> on input line 75.
+ [2{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/e
+nc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}]
 
+[3]
 
-[2] [3{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/font
-s/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}]
-
-[4]
-
-[5] [6]
-Overfull \hbox (101.9754pt too wide) in paragraph at lines 376--377
+[4] [5]
+Overfull \hbox (101.9754pt too wide) in paragraph at lines 375--376
  [][] 
  []
 
 
-Overfull \hbox (15.15674pt too wide) in alignment at lines 382--406
+Overfull \hbox (15.15674pt too wide) in alignment at lines 381--405
  [] [] [] 
  []
 
-[7] [8]
+[6] [7]
 
-[9]
+[8]
 
-[10] (./memoria_microprocesador_smips.aux
+[9] (./memoria_microprocesador_smips.aux
 LaTeX Info: Redefining \. on input line 11.
 LaTeX Info: Redefining \% on input line 11.
 )
@@ -920,23 +920,15 @@ LaTeX Info: Redefining \% on input line 11.
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
-
-
-Package rerunfilecheck Warning: File `memoria_microprocesador_smips.out' has ch
-anged.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `memoria_microprocesador_smips.out':
-
-(rerunfilecheck)             Before: <no file>
-(rerunfilecheck)             After:  24EC722CC1D5A22C2AFBDD708D69D19D;4800.
+Package rerunfilecheck Info: File `memoria_microprocesador_smips.out' has not c
+hanged.
+(rerunfilecheck)             Checksum: 24EC722CC1D5A22C2AFBDD708D69D19D;4800.
  ) 
 Here is how much of TeX's memory you used:
- 24386 strings out of 475116
- 450102 string characters out of 5764601
- 863350 words of memory out of 5000000
- 46919 multiletter control sequences out of 15000+600000
+ 24414 strings out of 475116
+ 450638 string characters out of 5764601
+ 863587 words of memory out of 5000000
+ 46944 multiletter control sequences out of 15000+600000
  613723 words of font info for 72 fonts, out of 8000000 for 9000
  40 hyphenation exceptions out of 8191
  102i,12n,107p,573b,951s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -947,10 +939,10 @@ blic/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/
 texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/
 lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb></usr/share/texmf/
 fonts/type1/public/lm/lmtt10.pfb>
-Output written on memoria_microprocesador_smips.pdf (10 pages, 237791 bytes).
+Output written on memoria_microprocesador_smips.pdf (9 pages, 239189 bytes).
 PDF statistics:
- 171 PDF objects out of 1000 (max. 8388607)
- 136 compressed objects within 2 object streams
- 58 named destinations out of 1000 (max. 500000)
- 13 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 243 PDF objects out of 1000 (max. 8388607)
+ 208 compressed objects within 3 object streams
+ 56 named destinations out of 1000 (max. 500000)
+ 213 words of extra memory for PDF output out of 10000 (max. 10000000)
 
