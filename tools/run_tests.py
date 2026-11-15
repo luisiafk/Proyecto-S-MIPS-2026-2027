@@ -47,7 +47,7 @@ def main():
             esperado[fuente] = normalizar(mars.stdout)
         print(f'Ejecutando {len(fuentes)} programas en la placa...', flush=True)
         orden = [JAVA, f'-Djava.util.prefs.userRoot={directorio}/prefs', '--class-path', JAR,
-                 str(HERE/'Run.java'), str(args.circuito.resolve()), str(CICLOS_MAX), '0', *imagenes]
+                 str(HERE/'Run.java'), str(args.circuito.resolve()), str(CICLOS_MAX), '120', *imagenes]
         # Cada programa se informa en cuanto termina (la cosimulacion es lenta).
         proceso = subprocess.Popen(orden, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         resultados, fallos = [], 0
