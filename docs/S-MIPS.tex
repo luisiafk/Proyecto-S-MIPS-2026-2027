@@ -370,15 +370,15 @@ El diagrama muestra los dieciséis estados de la FSM y las condiciones que deter
 \node[st] (s5) at (8,0.2) {$S_5$};
 \node[st] (s6) at (2,0) {$S_6$};
 \node[st] (s7) at (5,0) {$S_7$};
-\node[st] (s8) at (2,-1.8) {$S_8$};
+\node[st] (s8) at (3,-2.8) {$S_8$};
 \node[st] (s9) at (5,-1.8) {$S_9$};
-\node[st] (s10) at (2,-3.6) {$S_{10}$};
-\node[st] (s11) at (5,-3.6) {$S_{11}$};
+\node[st] (s10) at (1.5,-3.6) {$S_{10}$};
+\node[st] (s11) at (5,-5.3) {$S_{11}$};
 \node[st] (s12) at (-1,3.5) {$S_{12}$};
 \node[dec] (service) at (2,3.5) {Servicio};
-\node[st] (s13) at (5,4.5) {$S_{13}$};
-\node[st] (s14) at (5,2.8) {$S_{14}$};
-\node[st] (s15) at (-7,-2.3) {$S_{15}$};
+\node[st] (s13) at (6,3.2) {$S_{13}$};
+\node[st] (s14) at (6,4.4) {$S_{14}$};
+\node[st] (s15) at (-4 , -2.3) {$S_{15}$};
 \node[done] (finish) at (10,-2.2) {Fin de\\operación};
 
 % Inicio y decodificación.
@@ -390,35 +390,35 @@ El diagrama muestra los dieciséis estados de la FSM y las condiciones que deter
 % Despacho según la instrucción.
 \draw[arr] (decode) to[out=35,in=215] node[lab,above left]{IsLoad $\lor$ IsStore} (s2.west);
 \draw[arr] (decode) -- node[lab,above]{IsR} (s6.west);
-\draw[arr] (decode) to[out=-35,in=145] node[lab,below left]{IsBeq $\lor$ IsBne} (s8.west);
-\draw[arr] (decode) to[out=-55,in=160] node[lab,below]{IsJ / IsJr} (s9.west);
+\draw[arr] (decode) to[out=-55,in=160] node[lab,below left]{IsBeq $\lor$ IsBne} (s8.west);
+\draw[arr] (decode) to[out=-35,in=145] node[lab,below]{IsJ / IsJr} (s9.west);
 \draw[arr] (decode) to[out=-70,in=170] node[lab,below]{IsImmediate} (s10.west);
 \draw[arr] (decode) to[out=120,in=180] node[lab,left]{Syscall} (s12.west);
-\draw[arr] (decode) to[out=200,in=90] node[lab,left]{Illegal} (s15.north);
+\draw[arr] (decode.south west) to[out=300,in=90] node[lab,left]{Illegal} (s15.north);
 
 
 % Rutas de memoria, tipo R e inmediatas.
 \draw[arr] (s2) -- node[lab,above]{IsLoad} (s3);
-\draw[arr] (s2) to[bend right=15] node[lab,right]{IsStore} (s5);
+\draw[arr] (s2) to[bend right=5] node[lab,right]{IsStore} (s5);
 \draw[arr] (s3) -- node[lab,above]{Always} (s4);
 \draw[arr] (s6) -- node[lab,above]{Always} (s7);
-\draw[arr] (s10) -- node[lab,above]{Always} (s11);
+\draw[arr] (s10) to[bend right=30] node[lab,above]{Always} (s11);
 
 % Syscall y selección del servicio.
 \draw[arr] (s12) -- (service);
-\draw[arr] (service) to[bend left=12] node[lab,above]{\$v0 = 11} (s13);
-\draw[arr] (service) to[bend right=12] node[lab,right]{\$v0 = 10} (s14);
+\draw[arr] (service) to[bend right=12] node[lab,above]{\$v0 = 11} (s13);
+\draw[arr] (service) to[bend left=12] node[lab,right]{\$v0 = 10} (s14);
 \draw[arr] (s14) edge[loop right] node[right,font=\scriptsize]{HALT / permanece} (s14);
-\draw[arr] (s12) to[out=180,in=90] node[lab,left]{Servicio no reconocido} (s0.north);
+\draw[arr] (s12.north west) to[out=160,in=90] node[lab,left]{Servicio no reconocido} (s0.north);
 
 % Todas las rutas que terminan regresan a FETCH por el punto común Done.
-\draw[arr] (s4.east) to[out=0,in=100] node[lab,above]{Done} (finish.north);
+\draw[arr] (s4.east) to[out=0,in=120] node[lab,above]{Done} (finish.north);
 \draw[arr] (s5.east) to[out=0,in=180] node[lab,above]{Done} (finish.west);
 \draw[arr] (s7.east) to[out=0,in=200] node[lab,below]{Done} (finish.west);
-\draw[arr] (s8.south) to[out=-90,in=220] node[lab,below]{Done} (finish.west);
-\draw[arr] (s9.south) to[out=-90,in=240] node[lab,below]{Done} (finish.south west);
-\draw[arr] (s11.east) to[out=0,in=270] node[lab,below]{Done} (finish.south);
-\draw[arr] (s13.north) to[out=90,in=90] node[lab,above]{Done / TTY\_WE} (finish.north);
+\draw[arr] (s8.south) to[out=-90,in=200] node[lab,below]{Done} (finish.south west);
+\draw[arr] (s9.south) to[out=-90,in=220] node[lab,below]{Done} (finish.west);
+\draw[arr] (s11.east) to[out=0,in=270] node[lab,below]{Done} (finish.south west);
+\draw[arr] (s13.east) to[bend left=60,out=-300,in=90] node[lab,right]{Done / TTY\_WE} (finish.north);
 \draw[arr] (finish.south) to[out=-90,in=-90] node[lab,below]{Next Fetch} (s0.south);
 
 % Recuperación desde instrucción ilegal.

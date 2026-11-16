@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2025/dev/Debian) (preloaded format=pdflatex 2026.11.5)  16 NOV 2026 17:40
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2025/dev/Debian) (preloaded format=pdflatex 2026.11.5)  16 NOV 2026 18:11
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1058,24 +1058,19 @@ c/dvips/lm/lm-rm.enc}]
 [7
 
 ]
-Overfull \vbox (44.22401pt too high) has occurred while \output is active []
-
-
-
-[8]
 Overfull \hbox (18.00217pt too wide) in alignment at lines 433--457
  [] [] [] 
  []
 
 
 
-[9
+[8
 
 ]
 
-[10]
+[9]
 
-[11] (./S-MIPS.aux
+[10] (./S-MIPS.aux
 LaTeX Info: Redefining \. on input line 11.
 LaTeX Info: Redefining \% on input line 11.
 )
@@ -1087,10 +1082,10 @@ Package rerunfilecheck Info: File `S-MIPS.out' has not changed.
 (rerunfilecheck)             Checksum: 24EC722CC1D5A22C2AFBDD708D69D19D;4800.
  ) 
 Here is how much of TeX's memory you used:
- 28806 strings out of 475116
- 530419 string characters out of 5764601
- 972979 words of memory out of 5000000
- 51151 multiletter control sequences out of 15000+600000
+ 28812 strings out of 475116
+ 530546 string characters out of 5764601
+ 974049 words of memory out of 5000000
+ 51158 multiletter control sequences out of 15000+600000
  632937 words of font info for 145 fonts, out of 8000000 for 9000
  40 hyphenation exceptions out of 8191
  102i,13n,107p,1003b,1034s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -1102,10 +1097,10 @@ re/texmf/fonts/type1/public/lm/lmr7.pfb></usr/share/texmf/fonts/type1/public/lm
 /lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/
 fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.
 pfb></usr/share/texmf/fonts/type1/public/lm/lmtt10.pfb>
-Output written on S-MIPS.pdf (11 pages, 281612 bytes).
+Output written on S-MIPS.pdf (10 pages, 281532 bytes).
 PDF statistics:
- 261 PDF objects out of 1000 (max. 8388607)
- 220 compressed objects within 3 object streams
- 58 named destinations out of 1000 (max. 500000)
+ 257 PDF objects out of 1000 (max. 8388607)
+ 217 compressed objects within 3 object streams
+ 57 named destinations out of 1000 (max. 500000)
  41685 words of extra memory for PDF output out of 42996 (max. 10000000)
 
