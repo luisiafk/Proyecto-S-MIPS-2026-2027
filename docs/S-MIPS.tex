@@ -1,0 +1,589 @@
+\documentclass[11pt,a4paper]{article}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+\geometry{margin=2.25cm, headheight=22pt, headsep=0.55cm, footskip=1cm}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,longtable,array,tabularx,colortbl}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\usepackage{float}
+\usepackage{pdflscape}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{hyperref}
+
+\definecolor{UHred}{HTML}{8F1D1D}
+\definecolor{UHredDark}{HTML}{741515}
+\definecolor{UHrose}{HTML}{FBF5F5}
+\definecolor{UHline}{HTML}{B75A5A}
+\hypersetup{colorlinks=true,linkcolor=UHred,urlcolor=UHred}
+\titleformat{\section}{\Large\bfseries\color{UHredDark}}{\thesection.}{0.55em}{}
+\titleformat{\subsection}{\large\bfseries\color{UHred}}{\thesubsection}{0.55em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{UHred}}{\thesubsubsection}{0.55em}{}
+\titlespacing*{\section}{0pt}{2.0ex plus .5ex}{1.0ex}
+\captionsetup{font=small,labelfont={bf,color=UHredDark},justification=centering}
+\setlength{\parskip}{3pt}
+\setlength{\parindent}{1.1em}
+\setlist{topsep=3pt,itemsep=2pt}
+\renewcommand{\arraystretch}{1.12}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\scshape Universidad de La Habana}
+\fancyhead[R]{\small\scshape Arquitectura de Computadoras}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{UHline}\leaders\hrule height \headrulewidth\hfill}} \renewcommand{\footrulewidth}{0pt}
+
+\title{\textbf{Diseño y funcionamiento de un microprocesador S-MIPS multiciclo}}
+\author{Luis Enrique Cohalla Cabrera}
+\date{16 de noviembre de 2026}
+
+\arrayrulecolor{UHline}
+\begin{document}
+\begin{center}
+    {\small\scshape\color{UHred} Universidad de La Habana $\cdot$ Arquitectura de Computadoras}\par
+    \vspace{0.45em}
+    {\LARGE\bfseries\color{UHredDark} Diseño y funcionamiento de un microprocesador S-MIPS multiciclo}\par
+    \vspace{0.35em}
+    {\normalsize Luis Enrique Cohalla Cabrera \quad -- \quad \textit{16 de noviembre de 2026}}\par
+    \vspace{0.5em}
+    {\color{UHline}\rule{\textwidth}{0.6pt}}
+\end{center}
+\vspace{0.5em}
+
+\section{Introducción}
+Este documento describe la arquitectura, el camino de datos y la unidad de control de un microprocesador compatible con el subconjunto S-MIPS implementado como una máquina multiciclo. La implementación utiliza una memoria compartida para instrucciones y datos, un banco de registros de 32 palabras de 32 bits, una ALU y una unidad de control basada en una máquina de estados finitos (FSM).
+La ejecución de cada instrucción se divide en etapas. En cada ciclo, la FSM activa las señales de control necesarias para mover datos entre los registros internos, la ALU, la memoria y el banco de registros. El registro de instrucción conserva la instrucción durante su ejecución, mientras que el contador de programa (PC) se actualiza cuando corresponde.
+
+\subsection{Convenciones}
+\begin{itemize}[nosep]
+    \item Todas las palabras y rutas principales de datos tienen 32 bits.
+    \item El banco de registros contiene 32 registros de 32 bits.
+    \item Los campos de instrucción se indican como \texttt{IR[31:0]}.
+    \item Los inmediatos ordinarios se extraen de \texttt{IR[15:0]}.
+    \item Las direcciones de memoria son direccionables por byte y la organización de palabras es little-endian. \item Los nombres de señales respetan mayúsculas y minúsculas tal como se usan en el circuito.
+\end{itemize}
+
+\section{Arquitectura general}
+
+El procesador se organiza en los siguientes bloques:
+\begin{enumerate}
+    \item \textbf{PC}: contiene la dirección de la instrucción actual.
+    \item \textbf{Memoria}: almacena instrucciones y datos. La dirección seleccionada procede del PC o del registro de dirección de memoria.
+    \item \textbf{IR}: almacena la instrucción leída.
+    \item \textbf{Register File}: banco de 32 registros con dos puertos de lectura y un puerto de escritura.
+    \item \textbf{Registros A y B}: almacenan los operandos leídos del banco de registros durante la etapa de decodificación.
+    \item \textbf{ALU}: realiza operaciones aritméticas, lógicas, comparaciones y desplazamientos.
+    \item \textbf{ALUOut}: conserva el resultado de la ALU entre ciclos.
+    \item \textbf{MDR}: conserva el dato leído de memoria.
+    \item \textbf{Datapath}: contiene los multiplexores, extensores y registros que conectan los bloques anteriores.
+    \item \textbf{Instruction Decoder, Control Unit y FSM}: decodifican la instrucción, determinan las señales de control y secuencian los ciclos.
+    \item \textbf{Branch Control}: decide si una condición de salto condicional se cumple.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+        block/.style={draw=UHred,fill=UHrose,rounded corners=2pt,align=center,minimum width=2.3cm,minimum height=0.9cm,text=UHredDark},
+        small/.style={draw=UHred,fill=UHrose,rounded corners=2pt,align=center,minimum width=1.8cm,minimum height=0.75cm,text=UHredDark},
+        arr/.style={-{Latex[length=2mm]},thick,color=UHred},
+        node distance=1.0cm and 1.35cm
+]
+\node[block] (pc) {PC};
+\node[block,below=of pc] (mem) {Memoria};
+\node[block,right=3.0 cm of pc] (ir) {IR};
+\node[block,below=1.2cm of ir] (decoder) {Instruction\\Decoder};
+\node[block,below=1.2cm of decoder] (control) {Control Unit};
+\node[block,below=1.4cm of control] (rf) {Register File\\32 $\times$ 32};
+\node[small,below=1.5cm of mem] (mdr) {MDR};
+\node[small,below=1.5cm of mdr] (ab) {Registros\\A y B};
+\node[block,below=1.4cm of ab] (alu) {ALU};
+\node[small,left=1.3cm of alu] (aluout) {ALUOut};
+\draw[arr] (pc) -- node[above]{dirección} (mem);
+\draw[arr] (mem) -- node[above]{instrucción} (ir);
+\draw[arr] (ir) -- (decoder);
+\draw[arr] (decoder) -- (control);
+\draw[arr] (control.west) -- ++(-1.0,0) |- (pc.east);
+\draw[arr] (control.south) --  (rf.north);
+\draw[arr] (rf) -- node[above]{RD1, RD2} (ab);
+\draw[arr] (ab) -- (alu);
+\draw[arr] (alu) -- (aluout);
+\draw[arr] (mem.south) -- ++(0,-0.7) -| (mdr.north);
+\draw[arr] (mdr) -- (rf);
+\draw[arr] (aluout) |- (mem.west);
+\draw[arr] (aluout.north) |- (pc.west);
+\end{tikzpicture}
+\caption{Vista funcional simplificada. Las flechas representan caminos de información; las señales de control se distribuyen desde la unidad de control.}
+\end{figure}
+
+\section{Formato de instrucción y decodificación}
+
+El decodificador obtiene los campos de la instrucción:
+\[
+    op = IR[31:26],\quad rs=IR[25:21],\quad rt=IR[20:16],
+\]
+\[
+    rd=IR[15:11],\quad shamt=IR[10:6],\quad funct=IR[5:0].
+\]
+Para instrucciones inmediatas se utiliza $imm=IR[15:0]$, y para saltos directos el campo de dirección procede de $IR[25:0]$.
+
+El \textit{Instruction Decoder} genera señales de identificación como \texttt{IsAdd}, \texttt{IsSub}, \texttt{IsAnd}, \texttt{IsOr}, \texttt{IsSlt}, \texttt{IsSll}, \texttt{IsSrl}, \texttt{IsJr}, \texttt{IsSysCall}, \texttt{IsAddi}, \texttt{IsAndi}, \texttt{IsOri}, \texttt{IsLui}, \texttt{IsLw}, \texttt{IsSw}, \texttt{IsLb}, \texttt{IsLbu}, \texttt{IsSb}, \texttt{IsBeq}, \texttt{IsBne}, \texttt{IsJ}, \texttt{IsJal}, entre otras.
+
+\subsection{Subconjunto de instrucciones considerado}
+
+\begin{longtable}{@{}llp{8.2cm}@{}}
+    \toprule
+    \textbf{Clase} & \textbf{Instrucciones} & \textbf{Descripción} \\
+    \midrule
+    R & \texttt{add}, \texttt{addu}, \texttt{sub} & Suma y resta entre registros. \\
+    R & \texttt{and}, \texttt{or} & Operaciones lógicas bit a bit. \\
+    R & \texttt{slt} & Comparación con signo; produce 1 si $rs<rt$. \\
+    R & \texttt{sll}, \texttt{srl} & Desplazamientos lógicos. \\
+    R & \texttt{jr} & Salto a la dirección almacenada en $rs$. \\
+    I & \texttt{addi}, \texttt{addiu} & Suma de registro e inmediato con extensión de signo. \\
+    I & \texttt{slti} & Comparación con signo frente a inmediato extendido con signo. \\
+    I & \texttt{andi}, \texttt{ori} & Operaciones lógicas con inmediato extendido con ceros. \\
+    I & \texttt{lui} & Carga el inmediato en los 16 bits superiores. \\
+    I & \texttt{lw}, \texttt{sw} & Lectura/escritura de palabra. \\
+    I & \texttt{lb}, \texttt{lbu}, \texttt{sb} & Lectura de byte con extensión de signo o ceros, y escritura de byte.\\
+    I & \texttt{beq}, \texttt{bne} & Saltos condicionales por igualdad o desigualdad. \\
+    J & \texttt{j}, \texttt{jal} & Salto directo; \texttt{jal} guarda la dirección de retorno en $r31$. \\
+    Sistema & \texttt{syscall} & Servicio de impresión de carácter o terminación. \\
+    \bottomrule
+\end{longtable}
+
+\section{Camino de datos}
+
+\subsection{Contador de programa y selección de dirección}
+
+El PC se actualiza mediante el multiplexor \texttt{MUX\_PCSource}, de cuatro entradas y 32 bits:
+\begin{center}
+    \begin{tabularx}{0.9\textwidth}{cX}
+        \toprule
+        \textbf{PCSource} & \textbf{Dato seleccionado} \\
+        \midrule
+        00 & Registro A, para \texttt{jr}. \\
+        01 & \texttt{ALUOut}, para destino de branch calculado. \\
+        10 & \texttt{ALU\_RESULT}, normalmente $PC+4$. \\
+        11 & \texttt{Jump\_Target}, para \texttt{j} y \texttt{jal}. \\
+        \bottomrule
+    \end{tabularx}
+\end{center}
+
+La dirección secuencial se calcula con la ALU:
+\[
+    PC+4 = PC + 4.
+\]
+El destino de salto condicional se calcula como:
+\[
+    PC_{\text{branch}} = (PC+4) + (\operatorname{SignExt}(imm)\ll 2).
+\]
+
+El destino de salto directo se construye como:
+\[
+    Jump\_Target = \{(PC+4)[31:28], IR[25:0], 2'b00\}.
+\]
+
+La escritura del PC está habilitada por:
+\[
+    PCEnable = PCwr \lor (PCwrCond \land BranchTaken).
+\]
+La unidad \texttt{Branch\_Control} calcula:
+\[
+    BranchTaken=(IsBeq\land ZeroFlag)\lor(IsBne\land\neg ZeroFlag).
+\]
+
+\subsection{Lectura del banco de registros}
+
+El banco de registros tiene dos puertos de lectura y uno de escritura. Los campos $rs$ y $rt$ seleccionan los registros fuente. Las salidas se capturan en los registros internos A y B durante el estado S1.
+
+El registro $r0$ (\texttt{\$zero}) siempre devuelve cero y no admite escritura efectiva. En el reinicio se inicializan:
+\[
+    \$gp=r28=0x00001800,\qquad \$sp=r29=0x00003FFC.
+\]
+
+La dirección de escritura y el dato de escritura se preparan mediante multiplexores:
+\begin{itemize}
+    \item \texttt{MUX\_RegisterDestination}: selecciona $rt$ o $rd$ según la clase de instrucción.
+    \item \texttt{MUX\_JALDestination}: fuerza $r31$ cuando se ejecuta \texttt{jal}.
+    \item \texttt{MUX\_WriteBack}: selecciona el dato de ALU o el dato leído de memoria.
+    \item \texttt{MUX\_JALWriteBack}: selecciona $PC+4$ para escribir la dirección de retorno de \texttt{jal}.
+\end{itemize}
+
+\subsection{Selección de operandos de la ALU}
+El multiplexor \texttt{MUX\_ALUSrcA} selecciona:
+\begin{itemize}
+    \item Entrada 0: PC.
+    \item Entrada 1: registro A.
+\end{itemize}
+
+El multiplexor \texttt{MUX\_ALUSrcB} selecciona una de cuatro entradas:
+\begin{center}
+    \begin{tabularx}{0.9\textwidth}{cX}
+        \toprule
+        \textbf{ALUSrcB} & \textbf{Entrada seleccionada} \\
+        \midrule
+        00 & Constante 4. \\
+        01 & Registro B. \\
+        10 & Inmediato extendido (\texttt{ExtendedImm}). \\
+        11 & Inmediato extendido con signo y desplazado dos bits. \\
+        \bottomrule
+    \end{tabularx}
+\end{center}
+
+\subsection{Extensión de inmediatos}
+
+La implementación distingue tres transformaciones:
+\begin{enumerate}
+    \item \textbf{Extensión de signo}: copia IR[15] en los 16 bits superiores. Se utiliza en \texttt{addi}, \texttt{addiu}, \texttt{slti}, desplazamientos de branch y direcciones efectivas.
+    \item \textbf{Extensión con ceros}: coloca IR[15:0] en los 16 bits inferiores y ceros en los superiores. Se utiliza en \texttt{andi} y \texttt{ori}.
+    \item \textbf{LUI}: coloca el inmediato en los 16 bits superiores:
+    \[
+        LUI\_Value = \{IR[15:0],16'b0\}= \operatorname{ZeroExt}(imm)\ll16.
+    \]
+\end{enumerate}
+
+Para elegir el inmediato ordinario se utiliza un multiplexor controlado por:
+\[
+    ZeroImmSelect = IsAndi \lor IsOri.
+\]
+Su entrada 0 es \texttt{SignExtendedImm}, su entrada 1 es \texttt{ZeroExtendedImm} y su salida se denomina \texttt{ExtendedImm}. Esta salida alimenta la entrada 2 de \texttt{MUX\_ALUSrcB}. La entrada de branch desplazada dos bits permanece separada.
+
+\subsection{ALU y registro ALUOut}
+
+La ALU recibe \texttt{ALUDataA} y \texttt{ALUDataB}. Su operación se codifica mediante \texttt{ALUControl[2:0]}:
+\begin{center}
+    \begin{tabular}{ccc l}
+        \toprule
+        \textbf{AC[2]} & \textbf{AC[1]} & \textbf{AC[0]} & \textbf{Operación} \\
+        \midrule
+        0 & 0 & 0 & ADD \\
+        0 & 0 & 1 & SUB \\
+        0 & 1 & 0 & AND \\
+        0 & 1 & 1 & OR \\
+        1 & 0 & 0 & SLT \\
+        1 & 0 & 1 & SLL \\
+        1 & 1 & 0 & SRL \\
+        \bottomrule
+    \end{tabular}
+\end{center}
+
+Las señales de selección de operación se forman a partir del estado y de las señales de identificación de instrucción:
+\begin{align*}
+    ALU_Add &= (IsS0\lor IsS1\lor IsS2)\\
+        &\quad\lor(IsS6\land(IsAdd\lor IsAddu))\\
+        &\quad\lor(IsS10\land(IsAddi\lor IsAddiu)),\\
+    ALU_Sub &= IsS8\lor(IsS6\land IsSub),\\
+    ALU_And &= (IsS6\land IsAnd)\lor(IsS10\land IsAndi),\\
+    ALU_Or &= (IsS6\land IsOr)\lor(IsS10\land IsOri),\\
+    ALU_Slt &= (IsS6\land IsSlt)\lor(IsS10\land IsSlti),\\
+    ALU_Sll &= IsS6\land IsSll,\\
+    ALU_Srl &= IsS6\land IsSrl.
+\end{align*}
+
+A partir de estas señales:
+\[
+AC[2]=ALU\_Slt\lor ALU\_Sll\lor ALU\_Srl,
+\]
+\[
+AC[1]=ALU\_And\lor ALU\_Or\lor ALU\_Srl,
+\]
+\[
+AC[0]=ALU\_Sub\lor ALU\_Or\lor ALU\_Sll.
+\]
+
+El resultado se captura en \texttt{ALUOut} cuando \texttt{ALUwr}=1. Para \texttt{lui}, el multiplexor \texttt{MUX\_LUI} selecciona el inmediato desplazado 16 bits en lugar del resultado ordinario de la ALU.
+
+\subsection{Acceso a memoria y bytes}
+
+La dirección de memoria se selecciona mediante \texttt{MUX\_MemoryAddress}:
+\begin{itemize}
+    \item PC durante la búsqueda de instrucción.
+    \item \texttt{ALUOut} durante accesos a datos.
+\end{itemize}
+El registro MDR conserva el dato leído. Para las lecturas de byte, el circuito selecciona el byte correspondiente según los dos bits menos significativos de la dirección:
+\begin{itemize}
+    \item \texttt{lb}: extiende el bit de signo del byte leído.
+    \item \texttt{lbu}: extiende con ceros.
+\end{itemize}
+Para \texttt{sb}, el dato de escritura se coloca en el carril de byte seleccionado y \texttt{MEM\_BE} habilita únicamente ese byte. En palabras, se habilitan los cuatro bytes. La memoria utiliza organización little-endian.
+
+\section{Máquina de estados finitos}
+La unidad de control es una FSM con un registro de estado de 4 bits. Se emplean los siguientes estados:
+
+\begin{longtable}{@{}clp{9cm}@{}}
+    \toprule
+    \textbf{Código} & \textbf{Estado} & \textbf{Función} \\
+    \midrule
+    0000 & S0 -- FETCH & Selección del PC como dirección de memoria, lectura de instrucción y cálculo de $PC+4$. \\
+    0001 & S1 -- DECODE & Decodificación, lectura del banco de registros y captura en A/B. \\
+    0010 & S2 -- MEM\_ADDR & Cálculo de dirección efectiva para carga o almacenamiento. \\
+    0011 & S3 -- MEM\_READ & Lectura de memoria y captura en MDR. \\
+    0100 & S4 -- LOAD\_WB & Escritura del dato cargado en el banco de registros. \\
+    0101 & S5 -- MEM\_WRITE & Escritura de palabra o byte en memoria. \\
+    0110 & S6 -- R\_EXEC & Ejecución de operación tipo R. \\
+    0111 & S7 -- R\_WB & Escritura del resultado tipo R. \\
+    1000 & S8 -- BRANCH & Comparación y cálculo del destino de branch. \\
+    1001 & S9 -- JUMP & Actualización del PC para salto, \texttt{jal} o \texttt{jr}. \\
+    1010 & S10 -- IMM\_EXEC & Ejecución de operación aritmética/lógica inmediata o \texttt{lui}. \\
+    1011 & S11 -- IMM\_WB & Escritura del resultado inmediato en el banco de registros. \\
+    1100 & S12 -- SYSCALL & Decodificación del servicio de sistema solicitado. \\
+    1101 & S13 -- PRINT & Emisión de un carácter por la salida TTY. \\
+    1110 & S14 -- HALT & Detención permanente hasta reinicio. \\
+    1111 & S15 -- RECOVERY & Estado de recuperación; retorna a FETCH. \\
+    \bottomrule
+\end{longtable}
+
+\subsection{Diagrama de transiciones}
+
+El diagrama muestra los dieciséis estados de la FSM y las condiciones que determinan cada transición. Las etiquetas sobre las flechas identifican la clase de instrucción, el servicio solicitado o el final de la operación.
+
+\begin{landscape}
+\thispagestyle{fancy}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    scale=0.98,transform shape,every node/.style={font=\small},
+    st/.style={circle,draw=UHred,line width=1pt,fill=UHrose,text=UHredDark,minimum size=10mm,inner sep=1pt,font=\small\bfseries},
+    dec/.style={diamond,draw=UHred,line width=0.9pt,fill=UHrose,text=UHredDark,align=center,aspect=2.0,inner sep=2pt,font=\scriptsize},
+    done/.style={rounded corners=2pt,draw=UHred,fill=UHrose,text=UHredDark,align=center,font=\scriptsize,inner sep=3pt},
+    arr/.style={-{Latex[length=2.2mm]},draw=UHred,line width=0.9pt},
+    lab/.style={fill=white,inner sep=2pt,text=black,font=\scriptsize}
+]
+% Estados de la FSM.
+\node[st] (s0) at (-7,0) {$S_0$};
+\node[st] (s1) at (-4,0) {$S_1$};
+\node[dec] (decode) at (-1,0) {Clase de\\instrucción};
+\node[st] (s2) at (2,2) {$S_2$};
+\node[st] (s3) at (5,2) {$S_3$};
+\node[st] (s4) at (8,2) {$S_4$};
+\node[st] (s5) at (8,0.2) {$S_5$};
+\node[st] (s6) at (2,0) {$S_6$};
+\node[st] (s7) at (5,0) {$S_7$};
+\node[st] (s8) at (2,-1.8) {$S_8$};
+\node[st] (s9) at (5,-1.8) {$S_9$};
+\node[st] (s10) at (2,-3.6) {$S_{10}$};
+\node[st] (s11) at (5,-3.6) {$S_{11}$};
+\node[st] (s12) at (-1,3.5) {$S_{12}$};
+\node[dec] (service) at (2,3.5) {Servicio};
+\node[st] (s13) at (5,4.5) {$S_{13}$};
+\node[st] (s14) at (5,2.8) {$S_{14}$};
+\node[st] (s15) at (-7,-2.3) {$S_{15}$};
+\node[done] (finish) at (10,-2.2) {Fin de\\operación};
+
+% Inicio y decodificación.
+\node[left=8mm of s0,font=\small] {Start / Reset};
+\draw[arr] (-8.1,0) -- (s0);
+\draw[arr] (s0) -- node[lab,above]{Always} (s1);
+\draw[arr] (s1) -- node[lab,above]{Decode} (decode);
+
+% Despacho según la instrucción.
+\draw[arr] (decode) to[out=35,in=215] node[lab,above left]{IsLoad $\lor$ IsStore} (s2.west);
+\draw[arr] (decode) -- node[lab,above]{IsR} (s6.west);
+\draw[arr] (decode) to[out=-35,in=145] node[lab,below left]{IsBeq $\lor$ IsBne} (s8.west);
+\draw[arr] (decode) to[out=-55,in=160] node[lab,below]{IsJ / IsJr} (s9.west);
+\draw[arr] (decode) to[out=-70,in=170] node[lab,below]{IsImmediate} (s10.west);
+\draw[arr] (decode) to[out=120,in=180] node[lab,left]{Syscall} (s12.west);
+\draw[arr] (decode) to[out=200,in=90] node[lab,left]{Illegal} (s15.north);
+
+
+% Rutas de memoria, tipo R e inmediatas.
+\draw[arr] (s2) -- node[lab,above]{IsLoad} (s3);
+\draw[arr] (s2) to[bend right=15] node[lab,right]{IsStore} (s5);
+\draw[arr] (s3) -- node[lab,above]{Always} (s4);
+\draw[arr] (s6) -- node[lab,above]{Always} (s7);
+\draw[arr] (s10) -- node[lab,above]{Always} (s11);
+
+% Syscall y selección del servicio.
+\draw[arr] (s12) -- (service);
+\draw[arr] (service) to[bend left=12] node[lab,above]{\$v0 = 11} (s13);
+\draw[arr] (service) to[bend right=12] node[lab,right]{\$v0 = 10} (s14);
+\draw[arr] (s14) edge[loop right] node[right,font=\scriptsize]{HALT / permanece} (s14);
+\draw[arr] (s12) to[out=180,in=90] node[lab,left]{Servicio no reconocido} (s0.north);
+
+% Todas las rutas que terminan regresan a FETCH por el punto común Done.
+\draw[arr] (s4.east) to[out=0,in=100] node[lab,above]{Done} (finish.north);
+\draw[arr] (s5.east) to[out=0,in=180] node[lab,above]{Done} (finish.west);
+\draw[arr] (s7.east) to[out=0,in=200] node[lab,below]{Done} (finish.west);
+\draw[arr] (s8.south) to[out=-90,in=220] node[lab,below]{Done} (finish.west);
+\draw[arr] (s9.south) to[out=-90,in=240] node[lab,below]{Done} (finish.south west);
+\draw[arr] (s11.east) to[out=0,in=270] node[lab,below]{Done} (finish.south);
+\draw[arr] (s13.north) to[out=90,in=90] node[lab,above]{Done / TTY\_WE} (finish.north);
+\draw[arr] (finish.south) to[out=-90,in=-90] node[lab,below]{Next Fetch} (s0.south);
+
+% Recuperación desde instrucción ilegal.
+\draw[arr] (s15) -- node[lab,left]{Recovery} (s0);
+\end{tikzpicture}
+\caption{Diagrama completo de estados y transiciones de la FSM S-MIPS (codificación de 4 bits).}
+\end{figure}
+\end{landscape}
+
+\subsection{Condiciones de transición}
+
+\begin{longtable}{@{}clp{8.5cm}@{}}
+    \toprule
+    \textbf{Estado actual} & \textbf{Siguiente estado} & \textbf{Condición} \\
+    \midrule
+    S0 & S1 & Siempre. \\
+    S1 & S2 & Instrucción de carga o almacenamiento. \\
+    S1 & S6 & Instrucción tipo R, excepto saltos y syscall. \\
+    S1 & S8 & \texttt{beq} o \texttt{bne}. \\
+    S1 & S9 & \texttt{j}, \texttt{jal} o \texttt{jr}. \\
+    S1 & S10 & Instrucción inmediata, incluida \texttt{lui}. \\
+    S1 & S12 & \texttt{syscall}. \\
+    S1 & S15 & Instrucción ilegal o no reconocida, según la lógica de decodificación. \\
+    S2 & S3 & Carga (\texttt{lw}, \texttt{lb}, \texttt{lbu}). \\
+    S2 & S5 & Almacenamiento (\texttt{sw}, \texttt{sb}). \\
+    S3 & S4 & Siempre. \\
+    S4, S5, S7, S8, S9, S11, S13 & S0 & Fin de la operación correspondiente. \\
+    S6 & S7 & Siempre. \\
+    S10 & S11 & Siempre. \\
+    S12 & S13 & Servicio de impresión: \texttt{\$v0}=11. \\
+    S12 & S14 & Servicio de terminación: \texttt{\$v0}=10. \\
+    S12 & S0 & Servicio no reconocido. \\
+    S14 & S14 & Permanece detenido hasta reset. \\
+    S15 & S0 & Recuperación al estado inicial de búsqueda. \\
+    \bottomrule
+\end{longtable}
+
+\subsection{Diagrama temporal de una instrucción}
+
+Como ejemplo, una instrucción de carga de palabra \texttt{lw} recorre:
+\[
+    S0 \rightarrow S1 \rightarrow S2 \rightarrow S3 \rightarrow S4 \rightarrow S0.
+\]
+Una instrucción tipo R recorre:
+\[
+S0 \rightarrow S1 \rightarrow S6 \rightarrow S7 \rightarrow S0.
+\]
+Una instrucción inmediata recorre:
+\[
+    S0 \rightarrow S1 \rightarrow S10 \rightarrow S11 \rightarrow S0.
+\]
+Una instrucción de almacenamiento recorre:
+\[
+    S0 \rightarrow S1 \rightarrow S2 \rightarrow S5 \rightarrow S0.
+\]
+
+\section{Señales de control}
+
+Las señales se generan combinando la decodificación de estado con las señales de instrucción.
+
+\subsection{Señales principales por estado}
+
+En la tabla, una expresión como $S0\lor S9$ indica que la señal se activa en cualquiera de esos estados. Las señales no listadas en una fila permanecen desactivadas salvo que se indique lo contrario.
+
+\begin{longtable}{@{}lp{10cm}@{}}
+    \toprule
+    \textbf{Señal} & \textbf{Ecuación de control} \\
+    \midrule
+    \texttt{PCwr} & $S0 \lor S9$ \\
+    \texttt{PCwrCond} & $S8$ \\
+    \texttt{IRwr} & $S0$ \\
+    \texttt{IorD} & $S3 \lor S5$ \\
+    \texttt{MDRwr} & $S3$ \\
+    \texttt{Memwrite} & $S5$ \\
+    \texttt{Regwr} & $S4 \lor S7 \lor S11 \lor (S9\land IsJal)$ \\
+    \texttt{ALUwr} & $S1 \lor S2 \lor S6 \lor S10$ \\
+    \texttt{Awr}, \texttt{Bwr} & $S1$ \\
+    \texttt{TTY\_WE} & $S13$ \\
+    \texttt{HALT} & $S14$ \\
+    \texttt{RegDst} & $S4 \lor S11$ \\
+    \texttt{MemToReg} & $S4$ \\
+    \texttt{ALUSrcA} & $S2 \lor S6 \lor S8 \lor S10$ \\
+    \texttt{ALUSrcB[1]} & $S1 \lor S2 \lor S10$ \\
+    \texttt{ALUSrcB[0]} & $S1 \lor S6 \lor S8$ \\
+    \texttt{PCSource[1]} & $S0 \lor S1 \lor (S9\land\neg IsJr)$ \\
+    \texttt{PCSource[0]} & $S8 \lor (IsS9\land\neg IsJr)$ \\
+    \bottomrule
+\end{longtable}
+
+\subsection{Interpretación de PCSource}
+
+\begin{center}
+    \begin{tabular}{ccl}
+        \toprule
+        \textbf{Estado / caso} & \textbf{PCSource} & \textbf{Resultado} \\
+        \midrule
+        S0 & 10 & $PC+4$ \\
+        S8 & 01 & Destino de branch en ALUOut \\
+        S9 con \texttt{jr} & 00 & Registro A ($rs$) \\
+        S9 con \texttt{j}/\texttt{jal} & 11 & Jump\_Target \\
+        \bottomrule
+    \end{tabular}
+\end{center}
+
+\section{Instrucciones de salto y enlace}
+
+\begin{itemize}
+    \item \texttt{beq}: se calcula $A-B$. Si \texttt{ZeroFlag}=1, se habilita la escritura del PC con el destino de branch.
+    \item \texttt{bne}: se calcula $A-B$. Si \texttt{ZeroFlag}=0, se habilita la escritura del PC con el destino de branch.
+    \item \texttt{j}: el PC recibe \texttt{Jump\_Target}.
+    \item \texttt{jal}: el PC recibe \texttt{Jump\_Target} y el banco de registros recibe $PC+4$ en $r31$.
+    \item \texttt{jr}: el PC recibe el contenido de $rs$, almacenado en A.
+\end{itemize}
+
+\section{Llamadas al sistema}
+
+La instrucción \texttt{syscall} se atiende en S12. El circuito selecciona explícitamente los registros de argumentos:
+\begin{itemize}
+    \item El puerto de lectura correspondiente al servicio selecciona $r2$ (\texttt{\$v0}).
+    \item El puerto de lectura del argumento selecciona $r4$ (\texttt{\$a0}).
+\end{itemize}
+
+Se comparan los valores:
+\[
+    \$v0=11 \Rightarrow \text{servicio de impresión},
+    \qquad
+    \$v0=10 \Rightarrow \text{terminación}.
+\]
+Para el servicio 11, S12 pasa a S13. En S13 se activa \texttt{TTY\_WE} y se entrega a la salida TTY el carácter formado por los 7 bits inferiores de \texttt{\$a0}. Para el servicio 10, S12 pasa a S14 y la señal \texttt{HALT} permanece activa mientras la FSM se mantiene en S14.
+
+\section{Secuencias de control resumidas}
+
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{lX}
+        \toprule
+        \textbf{Instrucción} & \textbf{Secuencia de estados} \\
+        \midrule
+        \texttt{add}, \texttt{sub}, \texttt{and}, \texttt{or}, \texttt{slt}, \texttt{sll}, \texttt{srl}, \texttt{addu} & S0 $\to$ S1 $\to$ S6 $\to$ S7 $\to$ S0 \\
+        \texttt{addi}, \texttt{addiu}, \texttt{slti}, \texttt{andi}, \texttt{ori}, \texttt{lui} & S0 $\to$ S1 $\to$ S10 $\to$ S11 $\to$ S0 \\
+        \texttt{lw}, \texttt{lb}, \texttt{lbu} & S0 $\to$ S1 $\to$ S2 $\to$ S3 $\to$ S4 $\to$ S0 \\
+        \texttt{sw}, \texttt{sb} & S0 $\to$ S1 $\to$ S2 $\to$ S5 $\to$ S0 \\
+        \texttt{beq}, \texttt{bne} & S0 $\to$ S1 $\to$ S8 $\to$ S0 \\
+        \texttt{j}, \texttt{jal}, \texttt{jr} & S0 $\to$ S1 $\to$ S9 $\to$ S0 \\
+        \texttt{syscall} de impresión & S0 $\to$ S1 $\to$ S12 $\to$ S13 $\to$ S0 \\
+        \texttt{syscall} de salida & S0 $\to$ S1 $\to$ S12 $\to$ S14 $\to$ S14 $\to\cdots$ \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Recorridos de la FSM para las principales clases de instrucciones.}
+\end{table}
+
+\section{Inicialización y reinicio}
+
+Al activar el reset, el procesador vuelve al estado inicial de búsqueda y se inicializan los registros especiales indicados en el diseño:
+\[
+    r28 = 0x00001800,\qquad r29 = 0x00003FFC.
+\]
+El registro $r0$ conserva siempre el valor cero. El estado S14 no sale por transición normal: requiere reinicio para volver a ejecutar instrucciones.
+
+\section{Verificación mediante programas de prueba}
+
+La validación se realiza ejecutando programas de ensamblador y comparando la salida TTY con la salida de referencia de MARS.
+
+\section{Conclusión}
+
+El procesador implementa una arquitectura multiciclo en la que una FSM de 4 bits coordina el camino de datos. La separación entre búsqueda, decodificación, ejecución, acceso a memoria y escritura permite reutilizar la ALU y la memoria en distintos ciclos. Los multiplexores controlan las fuentes de operandos, el destino del PC y la selección del dato que se escribe en el banco de registros. El decodificador identifica las instrucciones y la unidad de control traduce esa identificación en señales temporales.
+
+\end{document}
